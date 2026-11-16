@@ -131,4 +131,5 @@ obj-$(CONFIG_DRM_PANEL_VISIONOX_VTDR6130) += panel-visionox-vtdr6130.o
 obj-$(CONFIG_DRM_PANEL_VISIONOX_R66451) += panel-visionox-r66451.o
 obj-$(CONFIG_DRM_PANEL_WIDECHIPS_WS2401) += panel-widechips-ws2401.o
 obj-$(CONFIG_DRM_PANEL_XIAOMI_M16T_36_02_0A) += panel-xiaomi-m16t-36-02-0a.o
+obj-$(CONFIG_DRM_PANEL_M11A_42_02_0A) += panel-m11a-42-02-0a-dsc.o
 obj-$(CONFIG_DRM_PANEL_XINPENG_XPP055C272) += panel-xinpeng-xpp055c272.o

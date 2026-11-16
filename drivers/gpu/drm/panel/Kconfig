@@ -1350,6 +1350,16 @@ config DRM_PANEL_XIAOMI_M16T_36_02_0A
 	  Say Y here to enable support for the 1080x2400 120Hz DSC panel
 	  used in the Xiaomi Poco F5 / Redmi Note 12 Turbo (marble).
 
+config DRM_PANEL_M11A_42_02_0A
+	tristate "Xiaomi M11A 42-02-0A DSC panel driver"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	select DRM_DISPLAY_DSC_HELPER
+	select VIDEOMODE_HELPERS
+	help
+	  Say Y or M here to enable the Xiaomi M11A 42-02-0A command mode panel.
+
 config DRM_PANEL_XINPENG_XPP055C272
 	tristate "Xinpeng XPP055C272 panel driver"
 	depends on OF
