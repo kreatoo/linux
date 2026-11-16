@@ -822,6 +822,9 @@
  * marble commit af1b85e54f57.
  */
 &pm8350b_haptics {
+	/* Values from marble (commit 484131af2ab8). */
+	qcom,vmax-microvolt = <1450000>;
+	qcom,lra-period-us = <5882>;
 	status = "okay";
 };
 
