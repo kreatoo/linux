@@ -1057,6 +1057,14 @@
 	bluetooth {
 		compatible = "qcom,wcn6855-bt";
 
+		/*
+		 * The factory BD_ADDR lived on the Android vendor partition,
+		 * which the pmOS install replaced. Without a non-zero address
+		 * the kernel closes the controller during init and BlueZ never
+		 * sees it. Use a stable locally-administered address.
+		 */
+		local-bd-address = [c2 6f 1b b1 3d 99];
+
 		vddrfacmn-supply = <&vreg_pmu_rfa_cmn_0p8>;
 		vddaon-supply = <&vreg_pmu_aon_0p8>;
 		vddwlcx-supply = <&vreg_pmu_wlcx_0p8>;
