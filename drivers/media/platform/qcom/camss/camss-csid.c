@@ -1111,7 +1111,10 @@ int msm_csid_subdev_init(struct camss *camss, struct csid_device *csid,
 
 	/* Memory */
 
-	if (camss->res->version == CAMSS_8250) {
+	if (camss->res->version == CAMSS_8450 && id >= 3) {
+		/* Lite CSID registers share the VFE lite register region. */
+		csid->base = csid->res->parent_dev_ops->get_base_address(camss, id);
+	} else if (camss->res->version == CAMSS_8250) {
 		/* for titan 480, CSID registers are inside the VFE region,
 		 * between the VFE "top" and "bus" registers. this requires
 		 * VFE to be initialized before CSID
