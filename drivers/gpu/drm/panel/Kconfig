@@ -1320,6 +1320,16 @@ config DRM_PANEL_XIAOMI_42_02_0A
 		Say Y or M here if you want to enable support for the Xiaomi FHD
 		(2400x1080@120Hz) cmd mode panel.
 
+config DRM_PANEL_M11A_42_02_0A
+	tristate "Xiaomi M11A 42-02-0A DSC panel driver"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	select DRM_DISPLAY_DSC_HELPER
+	select VIDEOMODE_HELPERS
+	help
+	  Say Y or M here to enable the Xiaomi M11A 42-02-0A command mode panel.
+
 config DRM_PANEL_XINPENG_XPP055C272
 	tristate "Xinpeng XPP055C272 panel driver"
 	depends on OF

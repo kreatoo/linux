@@ -1907,6 +1907,13 @@ endmenu # "ARMv8.2 architectural features"
 
 menu "ARMv8.3 architectural features"
 
+config XIAOMI_MONDRIAN_ABL_BOOT
+	bool "Xiaomi mondrian: boot directly from ABL"
+	depends on ARCH_QCOM
+	help
+	  Embed the board DTB in the kernel image instead of using the one
+	  handed over by the stock Qualcomm ABL.
+
 config ARM64_PTR_AUTH
 	bool "Enable support for pointer authentication"
 	default y

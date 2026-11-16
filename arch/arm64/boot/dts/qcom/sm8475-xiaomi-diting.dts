@@ -579,7 +579,7 @@
 	status = "okay";
 };
 
-&usb_1_dwc3 {
+&usb_1 {
 	dr_mode = "peripheral";
 	maximum-speed = "high-speed";
 	/* Remove USB3 phy */

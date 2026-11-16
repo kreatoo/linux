@@ -16,6 +16,7 @@
 #include "aw88261.h"
 #include "aw88395/aw88395_data_type.h"
 #include "aw88395/aw88395_device.h"
+#include <sound/pcm_params.h>
 
 static const struct regmap_config aw88261_remap_config = {
 	.val_bits = 16,
@@ -712,6 +713,35 @@ static void aw88261_start(struct aw88261 *aw88261, bool sync_start)
 			AW88261_START_WORK_DELAY_MS);
 }
 
+static int aw88261_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+{
+	struct aw88261 *aw88261 = snd_soc_component_get_drvdata(dai->component);
+
+	dev_dbg(aw88261->aw_pa->dev, "fmt = 0x%x\n", fmt);
+
+	return 0;
+}
+
+static int aw88261_hw_params(struct snd_pcm_substream *substream,
+	struct snd_pcm_hw_params *params,
+	struct snd_soc_dai *dai)
+{
+	struct aw88261 *aw88261 = snd_soc_component_get_drvdata(dai->component);
+
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+		return 0;
+
+	dev_dbg(aw88261->aw_pa->dev, "rate %u width %u\n",
+		params_rate(params), params_width(params));
+
+	return 0;
+}
+
+static const struct snd_soc_dai_ops aw88261_dai_ops = {
+	.set_fmt = aw88261_dai_set_fmt,
+	.hw_params = aw88261_hw_params,
+};
+
 static struct snd_soc_dai_driver aw88261_dai[] = {
 	{
 		.name = "aw88261-aif",
@@ -730,6 +760,7 @@ static struct snd_soc_dai_driver aw88261_dai[] = {
 			.rates = AW88261_RATES,
 			.formats = AW88261_FORMATS,
 		},
+		.ops = &aw88261_dai_ops,
 	},
 };
 
