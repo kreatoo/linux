@@ -247,9 +247,20 @@
 			qcom,vmid = <QCOM_SCM_VMID_MSS_MSA>;
 		};
 
-		splash_region@b8000000 {
-			reg = <0x0 0xb8000000 0x0 0x2b00000>;
-			no-map;
+		/*
+		 * Bootloader splash / framebuffer. Exposed to simpledrm so the
+		 * kernel can take over the display the bootloader already
+		 * initialised and print the console to it. no-map is dropped so
+		 * the region can be mapped; 1440x3200x4 = 0x1194000 bytes.
+		 */
+		framebuffer@b8000000 {
+			compatible = "simple-framebuffer";
+			reg = <0x0 0xb8000000 0x0 0x1194000>;
+			width = <1440>;
+			height = <3200>;
+			stride = <5760>;
+			format = "a8r8g8b8";
+			status = "okay";
 		};
 	};
 
@@ -1561,27 +1572,3 @@
 &cci1 {
 	status = "disabled";
 };
-
-/* --- bisect: disable heavy peripherals, keep core + ufs + usb --- */
-&gpu { status = "disabled"; };
-&iris { status = "disabled"; };
-&ipa { status = "disabled"; };
-&mdss { status = "disabled"; };
-&mdss_dsi0 { status = "disabled"; };
-&mdss_dsi0_phy { status = "disabled"; };
-&sound { status = "disabled"; };
-&rxmacro { status = "disabled"; };
-&txmacro { status = "disabled"; };
-&vamacro { status = "disabled"; };
-&swr1 { status = "disabled"; };
-&swr2 { status = "disabled"; };
-&i2c15 { status = "disabled"; };
-&pcie0 { status = "disabled"; };
-&pcie0_phy { status = "disabled"; };
-&uart20 { status = "disabled"; };
-&spi4 { status = "disabled"; };
-&i2c5 { status = "disabled"; };
-&remoteproc_adsp { status = "disabled"; };
-&remoteproc_mpss { status = "disabled"; };
-&remoteproc_slpi { status = "disabled"; };
-&pm8350b_haptics { status = "disabled"; };
