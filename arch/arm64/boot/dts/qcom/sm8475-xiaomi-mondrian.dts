@@ -1162,7 +1162,12 @@
 
 &sound {
 	compatible = "qcom,sm8450-sndcard";
-	model = "SM8475-Xiaomi-Mondrian";
+	/*
+	 * Must match the installed topology firmware name: the kernel loads
+	 * qcom/<driver_name>/<card->name>-tplg.bin, and the package installs
+	 * qcom/sm8450/Xiaomi-Mondrian-tplg.bin (driver_name is "sm8450").
+	 */
+	model = "Xiaomi-Mondrian";
 	speaker-earpiece-gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
 
 	pinctrl-0 = <&tert_mi2s_active>;
@@ -1192,16 +1197,10 @@
 
 		cpu {
 			sound-dai = <&q6apmbedai TERTIARY_TDM_RX_0>;
-			dai-tdm-slot-num = <4>;
-			dai-tdm-slot-width = <32>;
-			dai-tdm-slot-rx-mask = <1 1>;
 		};
 
 		codec {
 			sound-dai = <&speaker_top>, <&speaker_bottom>;
-			dai-tdm-slot-num = <4>;
-			dai-tdm-slot-width = <32>;
-			dai-tdm-slot-rx-mask = <1 1>;
 		};
 
 		platform {
