@@ -1071,7 +1071,7 @@
 		awinic,sync-flag;
 		/* TDM slot layout comes from the stock ACF register profile */
 		awinic,keep-fw-i2s-config;
-		firmware-name = "qcom/sm8475/xiaomi/mondrian/aw88261_acf.bin";
+		firmware-name = "aw882xx_acf.bin";
 		sound-name-prefix = "Top Speaker";
 	};
 
@@ -1082,7 +1082,7 @@
 		awinic,audio-channel = <1>;
 		awinic,sync-flag;
 		awinic,keep-fw-i2s-config;
-		firmware-name = "qcom/sm8475/xiaomi/mondrian/aw88261_acf.bin";
+		firmware-name = "aw882xx_acf.bin";
 		sound-name-prefix = "Bottom Speaker";
 	};
 };
