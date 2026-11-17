@@ -1067,8 +1067,6 @@
 		compatible = "awinic,aw88261";
 		reg = <0x34>;
 		#sound-dai-cells = <0>;
-		/* vendor overlay: reset-gpios = <&tlmm 1 0> (polarity unverified) */
-		reset-gpios = <&tlmm 1 GPIO_ACTIVE_HIGH>;
 		awinic,audio-channel = <0>;
 		awinic,sync-flag;
 		/* TDM slot layout comes from the stock ACF register profile */
@@ -1081,8 +1079,6 @@
 		compatible = "awinic,aw88261";
 		reg = <0x35>;
 		#sound-dai-cells = <0>;
-		/* vendor overlay: reset-gpios = <&tlmm 3 0> (polarity unverified) */
-		reset-gpios = <&tlmm 3 GPIO_ACTIVE_HIGH>;
 		awinic,audio-channel = <1>;
 		awinic,sync-flag;
 		awinic,keep-fw-i2s-config;
