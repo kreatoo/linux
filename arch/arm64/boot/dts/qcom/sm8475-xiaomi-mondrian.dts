@@ -41,6 +41,15 @@
 	chassis-type = "handset";
 
 	/*
+	 * Qualcomm board identification. The stock ABL matches a DTB against
+	 * these before it will boot at all; without them a DTB placed in
+	 * vendor_boot is rejected and the device drops straight to fastboot.
+	 * Values taken from the device's own vendor overlay (fragment@142).
+	 */
+	qcom,msm-id = <0x213 0x10000>, <0x21c 0x10000>, <0x212 0x10000>;
+	qcom,board-id = <0x10008 0x00>;
+
+	/*
 	 * Battery/charger run in ADSP firmware (battmgr) over pmic_glink. No
 	 * usb-c-connector yet: usb_1_dwc3 stays dr_mode=peripheral for netboot.
 	 */
@@ -214,9 +223,15 @@
 
 		ramoops@85200000 {
 			compatible = "ramoops";
+			/*
+			 * record + console must fit inside reg: the three 2 MiB
+			 * zones previously declared here overflowed the 4 MiB
+			 * region, so ramoops silently failed to register and
+			 * nothing was ever captured. pmsg dropped to make the
+			 * zones fit exactly.
+			 */
 			reg = <0x0 0x85200000 0x0 0x400000>;
 			record-size = <0x200000>;
-			pmsg-size = <0x200000>;
 			console-size = <0x200000>;
 			no-map;
 		};
@@ -1483,7 +1498,7 @@
 	iommus = <&apps_smmu 0x800 0x460>;
 	vdda-phy-supply = <&pm8350_l5>;
 	vdda-pll-supply = <&pm8350_l6>;
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -1502,11 +1517,11 @@
 };
 
 &cci0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &cci0_i2c0 {
-	status = "okay";
+	status = "disabled";
 
 	/*
 	 * Rear ultra-wide Sony IMX355. Wiring from the device's own vendor
@@ -1544,5 +1559,29 @@
 };
 
 &cci1 {
-	status = "okay";
+	status = "disabled";
 };
+
+/* --- bisect: disable heavy peripherals, keep core + ufs + usb --- */
+&gpu { status = "disabled"; };
+&iris { status = "disabled"; };
+&ipa { status = "disabled"; };
+&mdss { status = "disabled"; };
+&mdss_dsi0 { status = "disabled"; };
+&mdss_dsi0_phy { status = "disabled"; };
+&sound { status = "disabled"; };
+&rxmacro { status = "disabled"; };
+&txmacro { status = "disabled"; };
+&vamacro { status = "disabled"; };
+&swr1 { status = "disabled"; };
+&swr2 { status = "disabled"; };
+&i2c15 { status = "disabled"; };
+&pcie0 { status = "disabled"; };
+&pcie0_phy { status = "disabled"; };
+&uart20 { status = "disabled"; };
+&spi4 { status = "disabled"; };
+&i2c5 { status = "disabled"; };
+&remoteproc_adsp { status = "disabled"; };
+&remoteproc_mpss { status = "disabled"; };
+&remoteproc_slpi { status = "disabled"; };
+&pm8350b_haptics { status = "disabled"; };
