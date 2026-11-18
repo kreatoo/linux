@@ -249,6 +249,13 @@ static int m11a_42_02_0a_dsc_prepare(struct drm_panel *panel)
 		regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
 		return ret;
 	}
+	dev_info(dev, "m11a PPS pre-pack: xmit=%u dec=%u rcqp=%u lbd=%u chunk=%u scale=%u off0=%u off15=%u bpp=%u bpc=%u\n",
+		 ctx->dsc.initial_xmit_delay, ctx->dsc.initial_dec_delay,
+		 ctx->dsc.rc_range_params[DSC_NUM_BUF_RANGES - 1].range_max_qp,
+		 ctx->dsc.line_buf_depth, ctx->dsc.slice_chunk_size,
+		 ctx->dsc.initial_scale_value, ctx->dsc.initial_offset,
+		 ctx->dsc.final_offset, ctx->dsc.bits_per_pixel,
+		 ctx->dsc.bits_per_component);
 	drm_dsc_pps_payload_pack(&pps, &ctx->dsc);
 
 	ret = mipi_dsi_picture_parameter_set(ctx->dsi, &pps);
