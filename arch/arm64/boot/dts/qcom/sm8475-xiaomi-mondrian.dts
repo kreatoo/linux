@@ -1080,7 +1080,9 @@
  * Speakers: 2x Awinic AW88263S (register compatible with AW88261) on i2c15,
  * fed by the tertiary TDM interface ("TDM-LPAIF-RX-TERTIARY"), the same way
  * as on marble. 0x34 = top (also the earpiece, see gpio 52), 0x35 = bottom.
- * Reset lines and the shared ACF profile come from the vendor overlay.
+ * Reset lines come from the vendor overlay. The ACF is still loaded, but the
+ * TDM rate/slot layout is programmed by the driver from the dai-link (no
+ * awinic,keep-fw-i2s-config), so the amps follow the 96 kHz / 4 x 32-bit BE.
  */
 &i2c15 {
 	clock-frequency = <400000>;
@@ -1092,8 +1094,6 @@
 		#sound-dai-cells = <0>;
 		awinic,audio-channel = <0>;
 		awinic,sync-flag;
-		/* TDM slot layout comes from the stock ACF register profile */
-		awinic,keep-fw-i2s-config;
 		firmware-name = "aw882xx_acf.bin";
 		sound-name-prefix = "Top Speaker";
 	};
@@ -1104,7 +1104,6 @@
 		#sound-dai-cells = <0>;
 		awinic,audio-channel = <1>;
 		awinic,sync-flag;
-		awinic,keep-fw-i2s-config;
 		firmware-name = "aw882xx_acf.bin";
 		sound-name-prefix = "Bottom Speaker";
 	};
