@@ -660,6 +660,7 @@ void dpu_encoder_update_topology(struct drm_encoder *drm_enc,
 {
 	struct dpu_encoder_virt *dpu_enc = to_dpu_encoder_virt(drm_enc);
 	struct msm_drm_private *priv = dpu_enc->base.dev->dev_private;
+	struct dpu_kms *dpu_kms = to_dpu_kms(priv->kms);
 	struct msm_display_info *disp_info = &dpu_enc->disp_info;
 	struct drm_connector *connector;
 	struct drm_connector_state *conn_state;
@@ -677,9 +678,10 @@ void dpu_encoder_update_topology(struct drm_encoder *drm_enc,
 	if (dsc) {
 		WARN(topology->num_intf > 2,
 		     "DSC topology cannot support more than 2 interfaces\n");
-		topology->num_dsc = 1;
-		topology->num_lm = 1;
-		topology->num_intf = 1;
+		if (topology->num_intf >= 2 || dpu_kms->catalog->dsc_count >= 2)
+			topology->num_dsc = 2;
+		else
+			topology->num_dsc = 1;
 	}
 
 	connector = drm_atomic_get_new_connector_for_encoder(state, drm_enc);
