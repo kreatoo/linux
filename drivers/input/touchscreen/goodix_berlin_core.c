@@ -617,8 +617,6 @@ static irqreturn_t goodix_berlin_irq(int irq, void *data)
 				     "touch head checksum error: %*ph\n",
 				     (int)GOODIX_BERLIN_HEADER_SIZE,
 				     &cd->event.hdr);
-		if (!goodix_berlin_send_cmd(cd, 0x90, 0x00))
-			goodix_berlin_send_cmd(cd, 0x91, 0x81);
 		goto out_clear;
 	}
 
@@ -635,6 +633,8 @@ static irqreturn_t goodix_berlin_irq(int irq, void *data)
 		default:
 			dev_warn(cd->dev, "unsupported request code 0x%x\n",
 				 cd->event.hdr.request_type);
+			if (!goodix_berlin_send_cmd(cd, 0x90, 0x00))
+				goodix_berlin_send_cmd(cd, 0x91, 0x81);
 		}
 	}
 
