@@ -223,16 +223,10 @@
 
 		ramoops@85200000 {
 			compatible = "ramoops";
-			/*
-			 * record + console must fit inside reg: the three 2 MiB
-			 * zones previously declared here overflowed the 4 MiB
-			 * region, so ramoops silently failed to register and
-			 * nothing was ever captured. pmsg dropped to make the
-			 * zones fit exactly.
-			 */
 			reg = <0x0 0x85200000 0x0 0x400000>;
-			record-size = <0x200000>;
+			record-size = <0x100000>;
 			console-size = <0x200000>;
+			pmsg-size = <0x100000>;
 			no-map;
 		};
 

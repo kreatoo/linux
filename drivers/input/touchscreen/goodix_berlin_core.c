@@ -173,6 +173,7 @@ struct goodix_berlin_core {
 	int irq;
 
 	/* Runtime parameters extracted from IC_INFO buffer  */
+	u32 cmd_addr;
 	u32 touch_data_addr;
 
 	const struct goodix_berlin_ic_data *ic_data;
@@ -348,6 +349,7 @@ static int goodix_berlin_parse_ic_info(struct goodix_berlin_core *cd,
 #undef ADVANCE_LE16_PARAMS
 
 	misc = (struct goodix_berlin_ic_info_misc *)&data[offset];
+	cd->cmd_addr = le32_to_cpu(misc->cmd_addr);
 	cd->touch_data_addr = le32_to_cpu(misc->touch_data_addr);
 
 	return 0;
@@ -411,6 +413,47 @@ static int goodix_berlin_get_ic_info(struct goodix_berlin_core *cd)
 	}
 
 	return 0;
+}
+
+/*
+ * Send a command through the IC command interface and wait for the ACK byte.
+ * The frame is type 0x05, command, payload and a 16-bit checksum, always
+ * transferred as 16 bytes at cmd_addr.
+ */
+static int goodix_berlin_send_cmd(struct goodix_berlin_core *cd, u8 cmd, u8 data)
+{
+	u8 buf[16] = { 0 };
+	u8 resp[16] = { 0 };
+	u16 checksum;
+	int ret, i, j;
+
+	buf[2] = 0x05;
+	buf[3] = cmd;
+	buf[4] = data;
+	checksum = data + ((cmd + 5) & 0xff);
+	put_unaligned_le16(checksum, &buf[5]);
+
+	for (i = 0; i < 6; i++) {
+		ret = regmap_raw_write(cd->regmap, cd->cmd_addr, buf, sizeof(buf));
+		if (ret)
+			return ret;
+
+		for (j = 0; j < 6; j++) {
+			ret = regmap_raw_read(cd->regmap, cd->cmd_addr, resp,
+					      sizeof(resp));
+			if (ret)
+				return ret;
+
+			if (resp[1] == 0x80) {
+				msleep(40);
+				return 0;
+			}
+
+			usleep_range(1000, 1100);
+		}
+	}
+
+	return -EINVAL;
 }
 
 static int goodix_berlin_get_remaining_contacts(struct goodix_berlin_core *cd,
@@ -574,6 +617,8 @@ static irqreturn_t goodix_berlin_irq(int irq, void *data)
 				     "touch head checksum error: %*ph\n",
 				     (int)GOODIX_BERLIN_HEADER_SIZE,
 				     &cd->event.hdr);
+		if (!goodix_berlin_send_cmd(cd, 0x90, 0x00))
+			goodix_berlin_send_cmd(cd, 0x91, 0x81);
 		goto out_clear;
 	}
 
@@ -664,6 +709,14 @@ static int goodix_berlin_resume(struct device *dev)
 	int error;
 
 	error = goodix_berlin_power_on(cd);
+	if (error)
+		return error;
+
+	error = goodix_berlin_send_cmd(cd, 0x90, 0x00);
+	if (error)
+		return error;
+
+	error = goodix_berlin_send_cmd(cd, 0x91, 0x81);
 	if (error)
 		return error;
 
@@ -780,6 +833,18 @@ int goodix_berlin_probe(struct device *dev, int irq, const struct input_id *id,
 	error = goodix_berlin_get_ic_info(cd);
 	if (error) {
 		dev_err(dev, "invalid ic info, abort");
+		return error;
+	}
+
+	error = goodix_berlin_send_cmd(cd, 0x90, 0x00);
+	if (error) {
+		dev_err(dev, "failed to send enable command: %d\n", error);
+		return error;
+	}
+
+	error = goodix_berlin_send_cmd(cd, 0x91, 0x81);
+	if (error) {
+		dev_err(dev, "failed to send enable command: %d\n", error);
 		return error;
 	}
 
