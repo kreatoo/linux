@@ -1972,10 +1972,24 @@ dpu_encoder_dsc_initial_line_calc(struct drm_dsc_config *dsc,
 				  u32 enc_ip_width, int dsc_common_mode)
 {
 	/*
-	 * Port of the downstream (Hardent core) latency model. The previous
-	 * approximation returned 3 lines for 1080px/2x540 slices at 10bpc/
-	 * 8bpp where the hardware needs 4, starving the encoder output on
-	 * busy content (noise on changing UI elements).
+	 * Command-mode panels with a fixed decoder configuration must keep the
+	 * prefill depth their timings were validated with: too many initial
+	 * lines overrun the decoder rate buffer on high-entropy content and
+	 * the slice never resynchronises. Keep the legacy approximation there.
+	 */
+	if (!(dsc_common_mode & DSC_MODE_VIDEO)) {
+		int ssm_delay = (dsc->bits_per_component < 10) ? 84 : 92;
+		int total_pixels = ssm_delay * 3 + dsc->initial_xmit_delay + 47;
+
+		if (enc_ip_width / dsc->slice_width > 1)
+			total_pixels += ssm_delay * 3;
+
+		return DIV_ROUND_UP(total_pixels, dsc->slice_width);
+	}
+
+	/*
+	 * Port of the downstream (Hardent core) latency model for video mode,
+	 * where the encoder output must not starve on busy content.
 	 */
 	const int rtl_max_bpc = 10, rtl_output_data_width = 64;
 	const int pipeline_latency = 28;
