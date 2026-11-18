@@ -2512,6 +2512,13 @@ config DMI
 
 endmenu # "Boot options"
 
+config XIAOMI_MONDRIAN_ABL_BOOT
+	bool "Xiaomi mondrian: boot directly from ABL"
+	depends on ARCH_QCOM
+	help
+	  Embed the Xiaomi mondrian device tree in the kernel and use it when
+	  booted by the stock ABL, which does not pass a usable device tree.
+
 menu "Power management options"
 
 source "kernel/power/Kconfig"

@@ -79,6 +79,8 @@ $(obj)/vdso32-wrap.o: $(obj)/vdso32/vdso.so
 
 obj-y					+= probes/
 obj-y					+= head.o
+obj-$(CONFIG_XIAOMI_MONDRIAN_ABL_BOOT)	+= builtin_dtb.o
+$(obj)/builtin_dtb.o: arch/arm64/boot/dts/qcom/sm8475-xiaomi-mondrian.dtb
 always-$(KBUILD_BUILTIN)		+= vmlinux.lds
 
 ifeq ($(CONFIG_DEBUG_EFI),y)
