@@ -1223,6 +1223,9 @@
 
 		codec {
 			sound-dai = <&speaker_top>, <&speaker_bottom>;
+			dai-tdm-slot-num = <4>;
+			dai-tdm-slot-width = <32>;
+			dai-tdm-slot-rx-mask = <1 1>;
 		};
 
 		platform {
