@@ -91,6 +91,8 @@
 		 */
 		vddio-supply = <&pm8350_s10>;
 		vddaon-supply = <&pmr735a_s2>;
+		vddpmumx-supply = <&pmr735a_s2>;
+		vddpmucx-supply = <&pm8350_s11>;
 		vddpmu-supply = <&pm8350_s11>;
 		vddrfa0p95-supply = <&pm8350_s11>;
 		vddrfa1p3-supply = <&pm8350_s12>;
