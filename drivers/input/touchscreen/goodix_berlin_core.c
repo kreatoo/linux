@@ -173,12 +173,48 @@ struct goodix_berlin_core {
 	int irq;
 
 	/* Runtime parameters extracted from IC_INFO buffer  */
+	u32 cmd_addr;
 	u32 touch_data_addr;
 
 	const struct goodix_berlin_ic_data *ic_data;
 
 	struct goodix_berlin_event event;
 };
+
+static int goodix_berlin_send_cmd(struct goodix_berlin_core *cd, u8 cmd, u8 payload)
+{
+	u8 buf[16] = {};
+	int retry, error;
+
+	buf[2] = 0x05;
+	buf[3] = cmd;
+	buf[4] = payload;
+	put_unaligned_le16((u8)payload + (u8)((u8)cmd + 0x05), &buf[5]);
+
+	for (retry = 0; retry < 6; retry++) {
+		int i;
+
+		error = regmap_raw_write(cd->regmap, cd->cmd_addr, buf, sizeof(buf));
+		if (error)
+			return error;
+
+		for (i = 0; i < 6; i++) {
+			u8 resp[16] = {};
+
+			error = regmap_raw_read(cd->regmap, cd->cmd_addr, resp,
+						sizeof(resp));
+			if (error)
+				return error;
+			if (resp[1] == 0x80) {
+				msleep(40);
+				return 0;
+			}
+			usleep_range(1000, 1100);
+		}
+	}
+
+	return -EINVAL;
+}
 
 static bool goodix_berlin_checksum_valid(const u8 *data, int size)
 {
@@ -348,6 +384,7 @@ static int goodix_berlin_parse_ic_info(struct goodix_berlin_core *cd,
 #undef ADVANCE_LE16_PARAMS
 
 	misc = (struct goodix_berlin_ic_info_misc *)&data[offset];
+	cd->cmd_addr = le32_to_cpu(misc->cmd_addr);
 	cd->touch_data_addr = le32_to_cpu(misc->touch_data_addr);
 
 	return 0;
@@ -590,6 +627,8 @@ static irqreturn_t goodix_berlin_irq(int irq, void *data)
 		default:
 			dev_warn(cd->dev, "unsupported request code 0x%x\n",
 				 cd->event.hdr.request_type);
+			goodix_berlin_send_cmd(cd, 0x90, 0x00);
+			goodix_berlin_send_cmd(cd, 0x91, 0x81);
 		}
 	}
 
@@ -664,6 +703,13 @@ static int goodix_berlin_resume(struct device *dev)
 	int error;
 
 	error = goodix_berlin_power_on(cd);
+	if (error)
+		return error;
+
+	error = goodix_berlin_send_cmd(cd, 0x90, 0x00);
+	if (error)
+		return error;
+	error = goodix_berlin_send_cmd(cd, 0x91, 0x81);
 	if (error)
 		return error;
 
@@ -780,6 +826,17 @@ int goodix_berlin_probe(struct device *dev, int irq, const struct input_id *id,
 	error = goodix_berlin_get_ic_info(cd);
 	if (error) {
 		dev_err(dev, "invalid ic info, abort");
+		return error;
+	}
+
+	error = goodix_berlin_send_cmd(cd, 0x90, 0x00);
+	if (error) {
+		dev_err(dev, "failed to send wake command");
+		return error;
+	}
+	error = goodix_berlin_send_cmd(cd, 0x91, 0x81);
+	if (error) {
+		dev_err(dev, "failed to send enable command");
 		return error;
 	}
 
