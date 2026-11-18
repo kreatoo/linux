@@ -590,6 +590,28 @@
 	};
 };
 
+/*
+ * sm8475.dtsi re-declares the GPU OPP table, so the inherited table is the
+ * union of the sm8450 and sm8475 sets: 23 levels.  a6xx_hfi_send_perf_table()
+ * copies gmu->nr_gpu_freqs entries into struct a6xx_hfi_msg_perf_table's
+ * gx_votes[16], so more than 16 levels writes past the end of that array.
+ * Delete the ten sm8450-only levels here - they are inherited nodes, so they
+ * have to be removed with /delete-node/ - which leaves the 13 sm8475 levels,
+ * i.e. exactly the set the r38 DTB has.
+ */
+&gpu_opp_table {
+	/delete-node/ opp-317000000;
+	/delete-node/ opp-350000000;
+	/delete-node/ opp-421000000;
+	/delete-node/ opp-492000000;
+	/delete-node/ opp-545000000;
+	/delete-node/ opp-599000000;
+	/delete-node/ opp-640000000;
+	/delete-node/ opp-734000000;
+	/delete-node/ opp-791000000;
+	/delete-node/ opp-818000000;
+};
+
 &i2c5 {
 	clock-frequency = <100000>;
 	status = "okay";
