@@ -563,6 +563,7 @@
  */
 &mdss_dsi0 {
 	vdda-supply = <&pm8350_l6>;
+	vddio-supply = <&pm8350c_l12>;
 	status = "okay";
 
 	panel@0 {
