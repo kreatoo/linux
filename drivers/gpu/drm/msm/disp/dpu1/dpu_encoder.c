@@ -662,7 +662,9 @@ void dpu_encoder_update_topology(struct drm_encoder *drm_enc,
 				 const struct drm_display_mode *adj_mode)
 {
 	struct dpu_encoder_virt *dpu_enc = to_dpu_encoder_virt(drm_enc);
+	struct msm_drm_private *priv = dpu_enc->base.dev->dev_private;
 	struct msm_display_info *disp_info = &dpu_enc->disp_info;
+	struct dpu_kms *dpu_kms = to_dpu_kms(priv->kms);
 	struct drm_connector *connector;
 	struct drm_connector_state *conn_state;
 	struct drm_framebuffer *fb;
@@ -688,11 +690,14 @@ void dpu_encoder_update_topology(struct drm_encoder *drm_enc,
 		WARN(topology->num_intf > 2,
 		     "DSC topology cannot support more than 2 interfaces\n");
 		/*
-		 * marble: use one DSC per interface (1:1:1). The panel takes
-		 * two 540px slices per line from a single encoder, which is
-		 * what the stock driver does and what this port is tuned for.
+		 * Use one DSC per slice where the catalog has enough blocks.
+		 * Single-DSC operation leaves the encoder with more slices per
+		 * line than it can packetise reliably on a 1440-wide panel.
 		 */
-		topology->num_dsc = topology->num_intf;
+		if (topology->num_intf >= 2 || dpu_kms->catalog->dsc_count >= 2)
+			topology->num_dsc = 2;
+		else
+			topology->num_dsc = 1;
 	}
 
 	connector = drm_atomic_get_new_connector_for_encoder(state, drm_enc);
