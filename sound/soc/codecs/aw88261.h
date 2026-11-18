@@ -519,7 +519,7 @@
 #define AW88261_START_RETRIES		(5)
 #define AW88261_START_WORK_DELAY_MS	(30)
 #define AW88261_START_WORK_RETRY_MS	(50)
-#define AW88261_START_WORK_MAX		(20)
+#define AW88261_START_WORK_MAX		(100)
 
 /* NOTE: 192000 has a reg value donwstream but not listed in datasheet */
 #define AW88261_RATES (SNDRV_PCM_RATE_8000_48000 | \
