@@ -94,11 +94,18 @@
 			no-map;
 		};
 
+		/*
+		 * 4 MiB total, split so the dmesg (oops/panic) zone actually
+		 * exists: ramoops_probe() gives the dmesg zones
+		 * mem_size - console_size - ftrace_size - pmsg_size bytes, so
+		 * 2+2+2 MiB in a 4 MiB region left no room for a panic record.
+		 * Now: 1 MiB dmesg (one record) + 2 MiB console + 1 MiB pmsg.
+		 */
 		ramoops: ramoops@85200000 {
 			compatible = "ramoops";
 			reg = <0x00 0x85200000 0x00 0x400000>;
-			record-size = <0x200000>;
-			pmsg-size = <0x200000>;
+			record-size = <0x100000>;
+			pmsg-size = <0x100000>;
 			console-size = <0x200000>;
 			no-map;
 		};
