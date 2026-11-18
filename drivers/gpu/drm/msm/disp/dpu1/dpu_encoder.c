@@ -2161,7 +2161,9 @@ void dpu_encoder_prepare_for_kickoff(struct drm_encoder *drm_enc)
 	 * that moment (noise bands on updating content). Program it once per
 	 * enable (or after a CTL reset), like the downstream driver.
 	 */
-	if (dpu_enc->dsc && (!dpu_enc->dsc_programmed || !dpu_enc->cur_master)) {
+	if (dpu_enc->dsc && (!dpu_enc->dsc_programmed ||
+			     !dpu_enc->cur_master ||
+			     dpu_enc->cur_master->intf_mode != INTF_MODE_VIDEO)) {
 		dpu_encoder_prep_dsc(dpu_enc, dpu_enc->dsc);
 		dpu_enc->dsc_programmed = true;
 	}
