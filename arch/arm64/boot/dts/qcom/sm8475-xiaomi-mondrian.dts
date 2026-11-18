@@ -663,7 +663,7 @@
 };
 
 &remoteproc_adsp {
-	firmware-name = "qcom/sm8475/xiaomi/mondrian/adsp2.mdt";
+	firmware-name = "qcom/sm8475/xiaomi/mondrian/adsp.mdt";
 	status = "okay";
 };
 
