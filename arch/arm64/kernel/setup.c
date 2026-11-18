@@ -170,8 +170,15 @@ static void __init smp_build_mpidr_hash(void)
 static void __init setup_machine_fdt(phys_addr_t dt_phys)
 {
 	int size = 0;
-	void *dt_virt = fixmap_remap_fdt(dt_phys, &size, PAGE_KERNEL);
+	void *dt_virt;
 	const char *name;
+
+#ifdef CONFIG_XIAOMI_MONDRIAN_ABL_BOOT
+	if (&__dtb_start[0] != &__dtb_end[0])
+		dt_phys = __pa_symbol(__dtb_start);
+#endif
+
+	dt_virt = fixmap_remap_fdt(dt_phys, &size, PAGE_KERNEL);
 
 	if (dt_virt)
 		memblock_reserve(dt_phys, size);
@@ -338,8 +345,13 @@ void __init __no_sanitize_address setup_arch(char **cmdline_p)
 	/* Parse the ACPI tables for possible boot-time configuration */
 	acpi_boot_table_init();
 
-	if (acpi_disabled)
+	if (acpi_disabled) {
+#ifdef CONFIG_XIAOMI_MONDRIAN_ABL_BOOT
+		unflatten_and_copy_device_tree();
+#else
 		unflatten_device_tree();
+#endif
+	}
 
 	bootmem_init();
 
