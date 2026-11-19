@@ -246,7 +246,6 @@ static int m11a_42_02_0a_dsc_on(struct m11a_42_02_0a_dsc *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xb0, 0x00, 0xc8);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xb3, 0x00, 0xc8);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xb6, 0x00, 0xc8);
-	}
 
 	return dsi_ctx.accum_err;
 }
