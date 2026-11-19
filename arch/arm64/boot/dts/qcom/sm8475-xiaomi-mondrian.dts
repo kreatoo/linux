@@ -1203,7 +1203,7 @@
 	/* Stock speaker TDM: 96 kHz, 4 x 32-bit slots, short frame sync */
 	qcom,tdm-slots = <4>;
 	qcom,tdm-slot-width = <32>;
-	qcom,tdm-rate = <96000>;
+	qcom,tdm-rate = <48000>;
 	qcom,tdm-format = "dsp_a";
 
 	/*
