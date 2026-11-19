@@ -545,17 +545,6 @@
 		memory-region = <&iris_arp_mem>;
 		qcom,iommu-vmid = <0xb>; /* QCOM_SCM_VMID_CP_NON_PIXEL */
 	};
-
-display_panel_vddd: display-panel-vddd {
-	compatible = "regulator-fixed";
-	regulator-name = "display_panel_vddd";
-	regulator-min-microvolt = <1070000>;
-	regulator-max-microvolt = <1070000>;
-	gpio = <&tlmm 66 GPIO_ACTIVE_HIGH>;
-	enable-active-high;
-	regulator-boot-on;
-};
-
 };
 
 &mdss {
@@ -1324,6 +1313,16 @@ display_panel_vddd: display-panel-vddd {
 };
 
 &soc {
+	display_panel_vddd: display-panel-vddd {
+		compatible = "regulator-fixed";
+		regulator-name = "display_panel_vddd";
+		regulator-min-microvolt = <1070000>;
+		regulator-max-microvolt = <1070000>;
+		gpio = <&tlmm 66 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
 	/*
 	 * The marble base sm8450.dtsi carries no CAMSS node (SM8450 support is
 	 * not in this tree's camss driver yet), so the SoC description is kept
