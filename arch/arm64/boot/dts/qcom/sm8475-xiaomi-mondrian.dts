@@ -1157,6 +1157,7 @@
 			function = "mi2s2_sck";
 			drive-strength = <8>;
 			bias-disable;
+			output-low;
 		};
 
 		data0-pins {
@@ -1171,6 +1172,7 @@
 			function = "mi2s2_ws";
 			drive-strength = <8>;
 			bias-disable;
+			output-low;
 		};
 
 		data1-pins {
