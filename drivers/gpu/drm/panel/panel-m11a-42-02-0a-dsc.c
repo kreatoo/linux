@@ -221,6 +221,31 @@ static int m11a_42_02_0a_dsc_off(struct m11a_42_02_0a_dsc *ctx)
 	return dsi_ctx.accum_err;
 }
 
+static int m11a_42_02_0a_dsc_enable_supplies(struct m11a_42_02_0a_dsc *ctx)
+{
+	/* Stock M11A power-on order: VDDIO, VDDD, then VCI. */
+	static const unsigned int post_enable_us[] = { 20000, 20000, 15000 };
+	unsigned int i;
+	int ret;
+
+	for (i = 0; i < ARRAY_SIZE(post_enable_us); i++) {
+		if (i == 2)
+			fsleep(10000); /* VCI pre-enable delay */
+
+		ret = regulator_enable(ctx->supplies[i].consumer);
+		if (ret) {
+			dev_err(&ctx->dsi->dev, "Failed to enable %s: %d\n",
+				ctx->supplies[i].supply, ret);
+			regulator_bulk_disable(i, ctx->supplies);
+			return ret;
+		}
+
+		fsleep(post_enable_us[i]);
+	}
+
+	return 0;
+}
+
 static int m11a_42_02_0a_dsc_prepare(struct drm_panel *panel)
 {
 	struct m11a_42_02_0a_dsc *ctx = to_m11a_42_02_0a_dsc(panel);
@@ -228,14 +253,8 @@ static int m11a_42_02_0a_dsc_prepare(struct drm_panel *panel)
 	struct drm_dsc_picture_parameter_set pps;
 	int ret;
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-	if (ret < 0)
-		return ret;
-
-	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-	msleep(20);
-	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-	if (ret < 0)
+	ret = m11a_42_02_0a_dsc_enable_supplies(ctx);
+	if (ret)
 		return ret;
 
 	m11a_42_02_0a_dsc_reset(ctx);
