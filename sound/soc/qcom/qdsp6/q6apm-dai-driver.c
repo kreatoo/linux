@@ -534,6 +534,26 @@ static int q6apm_dai_open(struct snd_soc_component *component,
 		}
 	}
 
+	/*
+	 * Mondrian diagnostic: the tertiary speaker graph needs a deeper FE
+	 * buffer for glitch-free playback. Scope this to the FE graph used by
+	 * MultiMedia1 and leave all other boards/streams on existing limits.
+	 */
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK && graph_id == 0 &&
+	    of_machine_is_compatible("xiaomi,mondrian")) {
+		ret = snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+						  2400, PLAYBACK_MAX_PERIOD_SIZE);
+		if (ret < 0) {
+			dev_err(dev, "mondrian period size constraint failed %d\n", ret);
+			goto err;
+		}
+		ret = snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE,
+						  9600, BUFFER_BYTES_MAX / 4);
+		if (ret < 0) {
+			dev_err(dev, "mondrian buffer size constraint failed %d\n", ret);
+			goto err;
+		}
+	}
 	/* setup 10ms latency to accommodate DSP restrictions */
 	ret = snd_pcm_hw_constraint_step(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_SIZE, 480);
 	if (ret < 0) {
