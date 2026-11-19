@@ -1388,6 +1388,7 @@ static int audioreach_tdm_set_media_format(struct q6apm_graph *graph,
 	u16 nslots = cfg->tdm_nslots ? cfg->tdm_nslots : cfg->num_channels;
 	u16 slot_width = cfg->tdm_slot_width ? cfg->tdm_slot_width : cfg->bit_width;
 	void *p;
+	int ret;
 
 	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_cmd_pkt(size, APM_CMD_SET_CFG, 0);
 	if (IS_ERR(pkt))
@@ -1478,7 +1479,20 @@ static int audioreach_tdm_set_media_format(struct q6apm_graph *graph,
 		fs_cfg->frame_size_factor = 1;
 	}
 
-	return q6apm_send_cmd_sync(graph->apm, pkt, 0);
+	ret = q6apm_send_cmd_sync(graph->apm, pkt, 0);
+
+	/* r134 diagnostic: TDM SET_CFG fields, one line per command. */
+	dev_info(graph->dev,
+		 "TDM SET_CFG rate=%u width=%u ch=%u nslots=%u slot_width=%u mask=%#x sync_mode=%u sync_src=%u inv_sync=%u delay=%u -> %d\n",
+		 (unsigned int)cfg->sample_rate, (unsigned int)cfg->bit_width,
+		 (unsigned int)cfg->num_channels, (unsigned int)nslots,
+		 (unsigned int)slot_width, intf_cfg->cfg.slot_mask,
+		 (unsigned int)intf_cfg->cfg.sync_mode,
+		 (unsigned int)intf_cfg->cfg.sync_src,
+		 (unsigned int)intf_cfg->cfg.ctrl_invert_sync_pulse,
+		 (unsigned int)intf_cfg->cfg.ctrl_sync_data_delay, ret);
+
+	return ret;
 }
 
 static int audioreach_logging_set_media_format(struct q6apm_graph *graph,

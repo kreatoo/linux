@@ -115,7 +115,11 @@ static int audioreach_graph_mgmt_cmd(struct audioreach_graph *graph, uint32_t op
 	struct apm_graph_mgmt_cmd *mgmt_cmd;
 	struct audioreach_sub_graph *sg;
 	struct q6apm *apm = graph->apm;
+	bool log_cmd = opcode == APM_CMD_GRAPH_PREPARE ||
+		       opcode == APM_CMD_GRAPH_START;
+	char ids[64] = "";
 	int i = 0, payload_size = APM_GRAPH_MGMT_PSIZE(mgmt_cmd, num_sub_graphs);
+	int ret;
 
 	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_cmd_pkt(payload_size, opcode, 0);
 	if (IS_ERR(pkt))
@@ -133,7 +137,25 @@ static int audioreach_graph_mgmt_cmd(struct audioreach_graph *graph, uint32_t op
 	list_for_each_entry(sg, &info->sg_list, node)
 		mgmt_cmd->sub_graph_id_list[i++] = sg->sub_graph_id;
 
-	return q6apm_send_cmd_sync(apm, pkt, 0);
+	/* r134 diagnostic: capture the subgraph list before the packet is sent. */
+	if (log_cmd) {
+		size_t off = 0;
+
+		for (i = 0; i < num_sub_graphs && off < sizeof(ids); i++)
+			off += scnprintf(ids + off, sizeof(ids) - off, "%s%u",
+					 i ? "," : "",
+					 mgmt_cmd->sub_graph_id_list[i]);
+	}
+
+	ret = q6apm_send_cmd_sync(apm, pkt, 0);
+
+	if (log_cmd)
+		dev_info(apm->dev, "graph %d %s subgraphs=%d [%s] -> %d\n",
+			 info->id,
+			 opcode == APM_CMD_GRAPH_PREPARE ? "PREPARE" : "START",
+			 num_sub_graphs, ids, ret);
+
+	return ret;
 }
 
 static void q6apm_put_audioreach_graph(struct kref *ref)

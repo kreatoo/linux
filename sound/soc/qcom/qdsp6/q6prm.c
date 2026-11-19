@@ -111,6 +111,7 @@ static int q6prm_request_lpass_clock(struct device *dev, int clk_id, int clk_att
 	struct apm_module_param_data *param_data;
 	struct prm_cmd_request_rsc *req;
 	gpr_device_t *gdev = prm->gdev;
+	int ret;
 
 	struct gpr_pkt *pkt __free(kfree) =
 		audioreach_alloc_cmd_pkt(sizeof(*req), PRM_CMD_REQUEST_HW_RSC, 0,
@@ -133,7 +134,14 @@ static int q6prm_request_lpass_clock(struct device *dev, int clk_id, int clk_att
 	req->clock_id.clock_attri = clk_attr;
 	req->clock_id.clock_root = clk_root;
 
-	return q6prm_send_cmd_sync(prm, pkt, PRM_CMD_RSP_REQUEST_HW_RSC);
+	ret = q6prm_send_cmd_sync(prm, pkt, PRM_CMD_RSP_REQUEST_HW_RSC);
+
+	/* r134 diagnostic: TDM I-bit clock request only, one line per command. */
+	if (clk_id == LPASS_CLK_ID_TER_TDM_IBIT)
+		dev_info(dev, "PRM TER_TDM_IBIT id=%d attr=%d root=%d freq=%u -> %d\n",
+			 clk_id, clk_attr, clk_root, freq, ret);
+
+	return ret;
 }
 
 static int q6prm_release_lpass_clock(struct device *dev, int clk_id, int clk_attr, int clk_root,
