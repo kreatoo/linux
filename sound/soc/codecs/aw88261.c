@@ -11,6 +11,7 @@
 #include <linux/i2c.h>
 #include <linux/firmware.h>
 #include <linux/bitops.h>
+#include <linux/of.h>
 #include <linux/devm-helpers.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
@@ -184,6 +185,84 @@ static int aw88261_dev_check_pll(struct aw_device *aw_dev)
 	return -EPERM;
 }
 
+/*
+ * r136: stock PLL acquisition retry.  The vendor driver, after the plain lock
+ * check fails, retries once with the CCO mux switched to the divided setting
+ * and then back to bypass (aw882xx_device.c:541-586).  The AW88263S in the
+ * Xiaomi mondrian needs that sequence for its 48 kHz / TDM4 playback path, so
+ * mirror it here, once, and only for exactly that setup.
+ */
+static bool aw88261_pll_retry_allowed(struct aw88261 *aw88261)
+{
+	struct aw_device *aw_dev = aw88261->aw_pa;
+
+	/* Never for the vendor ACF path, which programs the PLL itself */
+	if (aw88261->keep_fw_i2s)
+		return false;
+
+	if (!of_machine_is_compatible("xiaomi,mondrian"))
+		return false;
+
+	/* AW88263S (PID 0x2113) only */
+	if (aw_dev->chip_id != AW88261_CHIP_ID)
+		return false;
+
+	/* Actual driver state: 48 kHz with four TDM slots */
+	return aw88261->sr_value == AW88261_I2SSR_48KHZ_VALUE &&
+	       aw88261->slot_num_value == AW88261_SLOT_NUM_TDM4S_VALUE;
+}
+
+static int aw88261_dev_check_pll_retry(struct aw88261 *aw88261, int initial_ret)
+{
+	struct aw_device *aw_dev = aw88261->aw_pa;
+	unsigned int reg_val;
+	int ret, rst_ret;
+
+	ret = regmap_read(aw_dev->regmap, AW88261_PLLCTRL1_REG, &reg_val);
+	if (ret)
+		return ret;
+
+	/* The retry only makes sense while the CCO is still in bypass */
+	if ((reg_val & ~AW88261_CCO_MUX_MASK) != AW88261_CCO_MUX_BYPASS_VALUE)
+		return -EPERM;
+
+	dev_info_ratelimited(aw_dev->dev,
+			     "pll initial lock check failed (%d), stock CCO-divided retry\n",
+			     initial_ret);
+
+	/* Change mode2: acquire the PLL from the divided CCO */
+	ret = regmap_update_bits(aw_dev->regmap, AW88261_PLLCTRL1_REG,
+			~AW88261_CCO_MUX_MASK, AW88261_CCO_MUX_DIVIDED_VALUE);
+	if (ret)
+		return ret;
+
+	/* Bounded check, same helper as the normal acquisition */
+	ret = aw88261_dev_check_pll(aw_dev);
+	dev_info_ratelimited(aw_dev->dev, "pll CCO-divided check: %d\n", ret);
+
+	/* Change mode1: restore the original bypass even on failure */
+	rst_ret = regmap_update_bits(aw_dev->regmap, AW88261_PLLCTRL1_REG,
+			~AW88261_CCO_MUX_MASK, AW88261_CCO_MUX_BYPASS_VALUE);
+	if (rst_ret) {
+		dev_info_ratelimited(aw_dev->dev,
+				     "pll CCO bypass restore failed: %d\n", rst_ret);
+		return rst_ret;
+	}
+
+	if (ret) {
+		dev_info_ratelimited(aw_dev->dev, "pll retry failed: %d\n", ret);
+		return ret;
+	}
+
+	usleep_range(AW88261_2000_US, AW88261_2000_US + 10);
+
+	/* Final lock check, only after the divided check succeeded */
+	ret = aw88261_dev_check_pll(aw_dev);
+	dev_info_ratelimited(aw_dev->dev, "pll final lock check: %d\n", ret);
+
+	return ret;
+}
+
 static int aw88261_dev_configure_syspll(struct aw88261 *aw88261)
 {
 	struct aw_device *aw_dev = aw88261->aw_pa;
@@ -259,7 +338,12 @@ static int aw88261_dev_configure_syspll(struct aw88261 *aw88261)
 	if (ret)
 		return ret;
 
-	return aw88261_dev_check_pll(aw_dev);
+	ret = aw88261_dev_check_pll(aw_dev);
+	if (ret != -EPERM || !aw88261_pll_retry_allowed(aw88261))
+		return ret;
+
+	/* One stock CCO-divided acquisition retry, never recursive */
+	return aw88261_dev_check_pll_retry(aw88261, ret);
 }
 
 static int aw88261_dev_check_sysst(struct aw_device *aw_dev)
