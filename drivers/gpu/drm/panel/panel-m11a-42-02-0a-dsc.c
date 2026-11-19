@@ -24,7 +24,7 @@ struct m11a_42_02_0a_dsc {
 	struct mipi_dsi_device *dsi;
 	struct drm_dsc_config dsc;
 	struct gpio_desc *reset_gpio;
-	struct regulator_bulk_data supplies[2];
+	struct regulator_bulk_data supplies[3];
 };
 
 static inline
@@ -385,8 +385,9 @@ static int m11a_42_02_0a_dsc_probe(struct mipi_dsi_device *dsi)
 	if (IS_ERR(ctx))
 		return PTR_ERR(ctx);
 
-	ctx->supplies[0].supply = "vdd";
-	ctx->supplies[1].supply = "vddio";
+	ctx->supplies[0].supply = "vddio";
+	ctx->supplies[1].supply = "vddd";
+	ctx->supplies[2].supply = "vci";
 	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ctx->supplies),
 				      ctx->supplies);
 	if (ret < 0)

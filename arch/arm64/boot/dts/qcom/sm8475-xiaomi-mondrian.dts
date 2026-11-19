@@ -545,6 +545,17 @@
 		memory-region = <&iris_arp_mem>;
 		qcom,iommu-vmid = <0xb>; /* QCOM_SCM_VMID_CP_NON_PIXEL */
 	};
+
+display_panel_vddd: display-panel-vddd {
+	compatible = "regulator-fixed";
+	regulator-name = "display_panel_vddd";
+	regulator-min-microvolt = <1070000>;
+	regulator-max-microvolt = <1070000>;
+	gpio = <&tlmm 66 GPIO_ACTIVE_HIGH>;
+	enable-active-high;
+	regulator-boot-on;
+};
+
 };
 
 &mdss {
@@ -569,8 +580,9 @@
 		/* stock: qcom,platform-reset-gpio = <&tlmm 0 0> */
 		reset-gpios = <&tlmm 0 GPIO_ACTIVE_LOW>;
 
-		vdd-supply = <&pm8350c_l13>;
 		vddio-supply = <&pm8350c_l12>;
+		vddd-supply = <&display_panel_vddd>;
+		vci-supply = <&pm8350c_l13>;
 
 		pinctrl-0 = <&mdp_vsync_p_active>;
 		pinctrl-1 = <&lcd_reset_n_suspend>, <&mdp_vsync_p_suspend>;
