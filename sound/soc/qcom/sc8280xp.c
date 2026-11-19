@@ -6,6 +6,7 @@
 #include <linux/cleanup.h>
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <sound/soc.h>
@@ -97,15 +98,29 @@ static int sc8280xp_snd_init(struct snd_soc_pcm_runtime *rtd)
 	case PRIMARY_TDM_RX_0...QUINARY_TDM_TX_7: {
 		struct snd_soc_dai *codec_dai;
 		unsigned int mask = GENMASK(SC8280XP_TDM_ACTIVE_SLOTS - 1, 0);
-		int i;
+		bool mondrian_speakers = cpu_dai->id == TERTIARY_TDM_RX_0 &&
+			of_machine_is_compatible("xiaomi,mondrian");
+		int i, ret;
 
 		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_BP_FP |
 				    data->tdm_fmt | SND_SOC_DAIFMT_NB_NF);
 		snd_soc_dai_set_tdm_slot(cpu_dai, mask, mask, data->tdm_slots,
 					 data->tdm_slot_width);
-		for_each_rtd_codec_dais(rtd, i, codec_dai)
-			snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_BC_FC |
-					    SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF);
+		for_each_rtd_codec_dais(rtd, i, codec_dai) {
+			ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_BC_FC |
+					   SND_SOC_DAIFMT_NB_NF |
+					   (mondrian_speakers ? data->tdm_fmt : SND_SOC_DAIFMT_I2S));
+			if (!mondrian_speakers)
+				continue;
+			if (ret)
+				return ret;
+
+			/* The amps receive the same two slots on the shared bus. */
+			ret = snd_soc_dai_set_tdm_slot(codec_dai, 0, mask,
+						       data->tdm_slots, data->tdm_slot_width);
+			if (ret)
+				return ret;
+		}
 		return 0;
 	}
 	case WSA_CODEC_DMA_RX_0:
