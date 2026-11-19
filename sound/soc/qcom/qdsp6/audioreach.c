@@ -7,6 +7,7 @@
 #include <linux/soc/qcom/apr.h>
 #include <sound/soc.h>
 #include <sound/soc-dai.h>
+#include <linux/of.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <dt-bindings/soc/qcom,gpr.h>
@@ -1425,7 +1426,13 @@ static int audioreach_tdm_set_media_format(struct q6apm_graph *graph,
 
 	switch (cfg->fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_DSP_A:
-		intf_cfg->cfg.sync_mode = TDM_SHORT_SYNC_BIT_MODE;
+		/* Test the sync mode found in Mondrian's tertiary sink ACDB entries. */
+		if (graph->info->id == TERTIARY_TDM_RX_0 &&
+		    module->module_id == MODULE_ID_TDM_SINK &&
+		    of_machine_is_compatible("xiaomi,mondrian"))
+			intf_cfg->cfg.sync_mode = TDM_LONG_SYNC_MODE;
+		else
+			intf_cfg->cfg.sync_mode = TDM_SHORT_SYNC_BIT_MODE;
 		intf_cfg->cfg.ctrl_sync_data_delay = TDM_DATA_DELAY_1_BCLK_CYCLE;
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
