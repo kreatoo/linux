@@ -25,6 +25,7 @@ struct m11a_42_02_0a_dsc {
 	struct drm_dsc_config dsc;
 	struct gpio_desc *reset_gpio;
 	struct regulator_bulk_data supplies[3];
+	bool supply_cleanup_failed;
 };
 
 static inline
@@ -226,7 +227,11 @@ static int m11a_42_02_0a_dsc_enable_supplies(struct m11a_42_02_0a_dsc *ctx)
 	/* Stock M11A power-on order: VDDIO, VDDD, then VCI. */
 	static const unsigned int post_enable_us[] = { 20000, 20000, 15000 };
 	unsigned int i;
-	int ret;
+	int ret, cleanup_ret;
+
+	/* A failed disable leaves the consumer's reference uncertain. */
+	if (ctx->supply_cleanup_failed)
+		return -EIO;
 
 	for (i = 0; i < ARRAY_SIZE(post_enable_us); i++) {
 		if (i == 2)
@@ -236,7 +241,15 @@ static int m11a_42_02_0a_dsc_enable_supplies(struct m11a_42_02_0a_dsc *ctx)
 		if (ret) {
 			dev_err(&ctx->dsi->dev, "Failed to enable %s: %d\n",
 				ctx->supplies[i].supply, ret);
-			regulator_bulk_disable(i, ctx->supplies);
+			while (i) {
+				i--;
+				cleanup_ret = regulator_disable(ctx->supplies[i].consumer);
+				if (cleanup_ret) {
+					dev_err(&ctx->dsi->dev, "Failed to disable %s: %d\n",
+						ctx->supplies[i].supply, cleanup_ret);
+					ctx->supply_cleanup_failed = true;
+				}
+			}
 			return ret;
 		}
 
