@@ -452,6 +452,9 @@ static int m11a_42_02_0a_dsc_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.dsc_version_major = 1;
 	ctx->dsc.dsc_version_minor = 2;
 
+	/* Vendor DT: qcom,mdss-dsc-slice-per-pkt = <2> (one packet per line). */
+	dsi->dsc_slice_per_pkt = 2;
+
 	ctx->dsc.slice_height = 32;
 	ctx->dsc.slice_width = 720;
 	/*
@@ -463,6 +466,32 @@ static int m11a_42_02_0a_dsc_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.bits_per_component = 10;
 	ctx->dsc.bits_per_pixel = 8 << 4; /* 4 fractional bits */
 	ctx->dsc.block_pred_enable = true;
+
+	/*
+	 * M11A decodes a fixed DSC 1.2 444 10-bpc 8-bpp configuration. Use the
+	 * same rate-control setup as the Marble panel driver for that DSC class;
+	 * otherwise the derived PPS values do not match the vendor DDIC setup.
+	 */
+	ctx->dsc.first_line_bpg_offset = 13;
+	ctx->dsc.initial_offset = 6144;
+	ctx->dsc.initial_xmit_delay = 512;
+	ctx->dsc.flatness_min_qp = 7;
+	ctx->dsc.flatness_max_qp = 16;
+	ctx->dsc.rc_quant_incr_limit0 = 15;
+	ctx->dsc.rc_quant_incr_limit1 = 15;
+	for (int i = 0; i < DSC_NUM_BUF_RANGES; i++) {
+		static const u8 min_qp[DSC_NUM_BUF_RANGES] = {
+			0, 4, 5, 5, 7, 7, 7, 7, 7, 8, 9, 9, 9, 12, 16 };
+		static const u8 max_qp[DSC_NUM_BUF_RANGES] = {
+			8, 8, 9, 10, 11, 11, 11, 12, 13, 14, 14, 15, 15, 16, 17 };
+		static const s8 bpg[DSC_NUM_BUF_RANGES] = {
+			2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+
+		ctx->dsc.rc_range_params[i].range_min_qp = min_qp[i];
+		ctx->dsc.rc_range_params[i].range_max_qp = max_qp[i];
+		ctx->dsc.rc_range_params[i].range_bpg_offset =
+			bpg[i] & DSC_RANGE_BPG_OFFSET_MASK;
+	}
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0) {
