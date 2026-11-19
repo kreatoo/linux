@@ -136,9 +136,13 @@ static int q6prm_request_lpass_clock(struct device *dev, int clk_id, int clk_att
 
 	ret = q6prm_send_cmd_sync(prm, pkt, PRM_CMD_RSP_REQUEST_HW_RSC);
 
-	/* r134 diagnostic: TDM I-bit clock request only, one line per command. */
-	if (clk_id == LPASS_CLK_ID_TER_TDM_IBIT)
-		dev_info(dev, "PRM TER_TDM_IBIT id=%d attr=%d root=%d freq=%u -> %d\n",
+	/*
+	 * r134 diagnostic: the TDM I-bit clock request only. clk_id here is the
+	 * Q6PRM DSP clock id (Q6PRM_LPASS_CLK_ID_TER_TDM_IBIT = 0x204), not the
+	 * DT binding index (LPASS_CLK_ID_TER_TDM_IBIT = 39).
+	 */
+	if (clk_id == Q6PRM_LPASS_CLK_ID_TER_TDM_IBIT)
+		dev_info(dev, "PRM TER_TDM_IBIT id=%#x attr=%d root=%d freq=%u -> %d\n",
 			 clk_id, clk_attr, clk_root, freq, ret);
 
 	return ret;

@@ -10,6 +10,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <dt-bindings/soc/qcom,gpr.h>
+#include <dt-bindings/sound/qcom,q6dsp-lpass-ports.h>
 #include "q6apm.h"
 #include "audioreach.h"
 
@@ -1481,16 +1482,26 @@ static int audioreach_tdm_set_media_format(struct q6apm_graph *graph,
 
 	ret = q6apm_send_cmd_sync(graph->apm, pkt, 0);
 
-	/* r134 diagnostic: TDM SET_CFG fields, one line per command. */
-	dev_info(graph->dev,
-		 "TDM SET_CFG rate=%u width=%u ch=%u nslots=%u slot_width=%u mask=%#x sync_mode=%u sync_src=%u inv_sync=%u delay=%u -> %d\n",
-		 (unsigned int)cfg->sample_rate, (unsigned int)cfg->bit_width,
-		 (unsigned int)cfg->num_channels, (unsigned int)nslots,
-		 (unsigned int)slot_width, intf_cfg->cfg.slot_mask,
-		 (unsigned int)intf_cfg->cfg.sync_mode,
-		 (unsigned int)intf_cfg->cfg.sync_src,
-		 (unsigned int)intf_cfg->cfg.ctrl_invert_sync_pulse,
-		 (unsigned int)intf_cfg->cfg.ctrl_sync_data_delay, ret);
+	/*
+	 * r134 diagnostic: tertiary TDM graph only, one line per SET_CFG.
+	 * module->instance_id/module_id identify the sink module, the interface
+	 * type/index come from topology and sd_line_idx is the lane mask; the
+	 * lane config block is only present when the topology has a "sd line".
+	 */
+	if (graph->info->id == TERTIARY_TDM_RX_0)
+		dev_info(graph->dev,
+			 "TDM SET_CFG graph=%d iid=%#x mod=%#x if=%u/%u lane=%#x lane_cfg=%u rate=%u width=%u ch=%u nslots=%u slot_width=%u mask=%#x sync_mode=%u sync_src=%u inv_sync=%u delay=%u -> %d\n",
+			 graph->info->id, module->instance_id, module->module_id,
+			 module->hw_interface_type, module->hw_interface_idx,
+			 module->sd_line_idx, (unsigned int)!!lc_sz,
+			 (unsigned int)cfg->sample_rate,
+			 (unsigned int)cfg->bit_width,
+			 (unsigned int)cfg->num_channels, (unsigned int)nslots,
+			 (unsigned int)slot_width, intf_cfg->cfg.slot_mask,
+			 (unsigned int)intf_cfg->cfg.sync_mode,
+			 (unsigned int)intf_cfg->cfg.sync_src,
+			 (unsigned int)intf_cfg->cfg.ctrl_invert_sync_pulse,
+			 (unsigned int)intf_cfg->cfg.ctrl_sync_data_delay, ret);
 
 	return ret;
 }

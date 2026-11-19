@@ -2,6 +2,7 @@
 // Copyright (c) 2020, Linaro Limited
 
 #include <dt-bindings/soc/qcom,gpr.h>
+#include <dt-bindings/sound/qcom,q6dsp-lpass-ports.h>
 #include <linux/cleanup.h>
 #include <linux/delay.h>
 #include <linux/jiffies.h>
@@ -115,8 +116,9 @@ static int audioreach_graph_mgmt_cmd(struct audioreach_graph *graph, uint32_t op
 	struct apm_graph_mgmt_cmd *mgmt_cmd;
 	struct audioreach_sub_graph *sg;
 	struct q6apm *apm = graph->apm;
-	bool log_cmd = opcode == APM_CMD_GRAPH_PREPARE ||
-		       opcode == APM_CMD_GRAPH_START;
+	bool log_cmd = (opcode == APM_CMD_GRAPH_PREPARE ||
+			opcode == APM_CMD_GRAPH_START) &&
+		       info->id == TERTIARY_TDM_RX_0;
 	char ids[64] = "";
 	int i = 0, payload_size = APM_GRAPH_MGMT_PSIZE(mgmt_cmd, num_sub_graphs);
 	int ret;
