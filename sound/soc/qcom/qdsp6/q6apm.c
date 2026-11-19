@@ -649,6 +649,15 @@ static int graph_callback(const struct gpr_resp_pkt *data, void *priv, int op)
 		}
 		phys = graph->rx_data.buf[token].phys;
 		mutex_unlock(&graph->lock);
+		if (graph->id == 0 && graph->shm_iid == 0x6001 &&
+		    of_machine_is_compatible("xiaomi,mondrian"))
+			dev_info_ratelimited(dev,
+				"mondrian write_done port=%d token=%d len=%u match=%d status=%#x\n",
+				graph->port->id, token,
+				hdr->token >> APM_WRITE_TOKEN_LEN_SHIFT,
+				lower_32_bits(phys) == done->buf_addr_lsw &&
+				upper_32_bits(phys) == done->buf_addr_msw,
+				done->status);
 		/* token numbering starts at 0 */
 		atomic_set(&graph->rx_data.hw_ptr, token + 1);
 		if (lower_32_bits(phys) == done->buf_addr_lsw &&

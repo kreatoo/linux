@@ -501,7 +501,15 @@ static void audioreach_populate_graph(struct q6apm *apm,
 		conn_obj->src_mod_op_port_id = info->src_mod_op_port_id;
 		conn_obj->dst_mod_inst_id = info->dst_mod_inst_id;
 		conn_obj->dst_mod_ip_port_id = info->dst_mod_ip_port_id;
+		if (info->id == TERTIARY_TDM_RX_0 &&
+		    of_machine_is_compatible("xiaomi,mondrian"))
+			dev_info(apm->dev, "mondrian graph 56 OPEN edge %#x:%u -> %#x:%u\n",
+				 conn_obj->src_mod_inst_id, conn_obj->src_mod_op_port_id,
+				 conn_obj->dst_mod_inst_id, conn_obj->dst_mod_ip_port_id);
 		nconn++;
+	} else if (info->id == TERTIARY_TDM_RX_0 &&
+		   of_machine_is_compatible("xiaomi,mondrian")) {
+		dev_info(apm->dev, "mondrian graph 56 OPEN has no FE edge\n");
 	}
 	if (info->num_connections) {
 		memcpy(&mc_data->conn_obj[nconn], info->connections,

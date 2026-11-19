@@ -90,6 +90,8 @@ struct q6apm_dai_rtd {
 	uint64_t copied_total;
 	uint16_t bits_per_sample;
 	snd_pcm_uframes_t queue_ptr;
+	unsigned int diag_scans;
+	unsigned int diag_channels;
 	bool next_track;
 	enum stream_state state;
 	struct q6apm_graph *graph;
@@ -371,6 +373,44 @@ static int q6apm_dai_prepare(struct snd_soc_component *component,
 	return 0;
 }
 
+/* Best-effort CPU snapshot, not a record of what the DSP read. */
+static void mondrian_trace_playback(struct device *dev,
+				    struct snd_pcm_runtime *rt,
+				    struct q6apm_dai_rtd *prtd)
+{
+	unsigned int left = 0, right = 0, channels;
+	size_t offset, bytes, i;
+	const u8 *p;
+
+	if (prtd->diag_scans >= 512 || prtd->diag_channels == 3 ||
+	    !rt->dma_area || !rt->buffer_size || !rt->period_size ||
+	    rt->format != SNDRV_PCM_FORMAT_S16_LE || rt->channels != 2 ||
+	    rt->sample_bits != 16 || rt->frame_bits != 32 ||
+	    prtd->queue_ptr % rt->period_size ||
+	    rt->buffer_size % rt->period_size ||
+	    rt->buffer_size > rt->dma_bytes / 4)
+		return;
+
+	offset = (prtd->queue_ptr % rt->buffer_size) * 4;
+	bytes = prtd->pcm_count;
+	if (!bytes || bytes > 65536 || bytes != rt->period_size * 4 ||
+	    bytes > rt->buffer_size * 4 - offset)
+		return;
+
+	p = rt->dma_area + offset;
+	for (i = 0; i < bytes; i += 4) {
+		left += !!(READ_ONCE(p[i]) | READ_ONCE(p[i + 1]));
+		right += !!(READ_ONCE(p[i + 2]) | READ_ONCE(p[i + 3]));
+	}
+	prtd->diag_scans++;
+	channels = (!!left) | ((!!right) << 1);
+	if (prtd->diag_scans == 1 || prtd->diag_scans == 512 ||
+	    (channels & ~prtd->diag_channels))
+		dev_info(dev, "mondrian pcm snapshot port=%d seq=%u offset=%zu bytes=%zu left=%u right=%u\n",
+			 prtd->graph->port->id, prtd->diag_scans, offset, bytes, left, right);
+	prtd->diag_channels |= channels;
+}
+
 static int q6apm_dai_ack(struct snd_soc_component *component, struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -386,6 +426,9 @@ static int q6apm_dai_ack(struct snd_soc_component *component, struct snd_pcm_sub
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		avail_periods = (runtime->control->appl_ptr - prtd->queue_ptr)/runtime->period_size;
 		for (i = 0; i < avail_periods; i++) {
+			if (prtd->graph->id == 0 && prtd->graph->shm_iid == 0x6001 &&
+			    of_machine_is_compatible("xiaomi,mondrian"))
+				mondrian_trace_playback(component->dev, runtime, prtd);
 			ret = q6apm_write_async(prtd->graph, prtd->pcm_count, 0, 0, NO_TIMESTAMP);
 			if (ret < 0) {
 				dev_err(component->dev, "Error queuing playback buffer %d\n", ret);
