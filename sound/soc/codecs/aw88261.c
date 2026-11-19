@@ -188,22 +188,22 @@ static int aw88261_dev_check_pll(struct aw_device *aw_dev)
 /*
  * r136: stock PLL acquisition retry.  The vendor driver, after the plain lock
  * check fails, retries once with the CCO mux switched to the divided setting
- * and then back to bypass (aw882xx_device.c:541-586).  The AW88263S in the
- * Xiaomi mondrian needs that sequence for its 48 kHz / TDM4 playback path, so
- * mirror it here, once, and only for exactly that setup.
+ * and then back to bypass (aw882xx_device.c:541-586). Test that recovery
+ * once per playback activation on Mondrian with AW88261 at 48 kHz/TDM4.
  */
 static bool aw88261_pll_retry_allowed(struct aw88261 *aw88261)
 {
 	struct aw_device *aw_dev = aw88261->aw_pa;
 
 	/* Never for the vendor ACF path, which programs the PLL itself */
-	if (aw88261->keep_fw_i2s)
+	if (aw88261->keep_fw_i2s || !aw88261->playback_active ||
+	    aw88261->pll_retry_attempted)
 		return false;
 
 	if (!of_machine_is_compatible("xiaomi,mondrian"))
 		return false;
 
-	/* AW88263S (PID 0x2113) only */
+	/* AW88261 (PID 0x2113) only */
 	if (aw_dev->chip_id != AW88261_CHIP_ID)
 		return false;
 
@@ -218,6 +218,7 @@ static int aw88261_dev_check_pll_retry(struct aw88261 *aw88261, int initial_ret)
 	unsigned int reg_val;
 	int ret, rst_ret;
 
+	aw88261->pll_retry_attempted = true;
 	ret = regmap_read(aw_dev->regmap, AW88261_PLLCTRL1_REG, &reg_val);
 	if (ret)
 		return ret;
@@ -233,12 +234,10 @@ static int aw88261_dev_check_pll_retry(struct aw88261 *aw88261, int initial_ret)
 	/* Change mode2: acquire the PLL from the divided CCO */
 	ret = regmap_update_bits(aw_dev->regmap, AW88261_PLLCTRL1_REG,
 			~AW88261_CCO_MUX_MASK, AW88261_CCO_MUX_DIVIDED_VALUE);
-	if (ret)
-		return ret;
-
-	/* Bounded check, same helper as the normal acquisition */
-	ret = aw88261_dev_check_pll(aw_dev);
-	dev_info_ratelimited(aw_dev->dev, "pll CCO-divided check: %d\n", ret);
+	if (!ret) {
+		ret = aw88261_dev_check_pll(aw_dev);
+		dev_info_ratelimited(aw_dev->dev, "pll CCO-divided check: %d\n", ret);
+	}
 
 	/* Change mode1: restore the original bypass even on failure */
 	rst_ret = regmap_update_bits(aw_dev->regmap, AW88261_PLLCTRL1_REG,
@@ -1445,6 +1444,7 @@ static int aw88261_playback_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMU:
 		mutex_lock(&aw88261->lock);
 		aw88261->playback_active = true;
+		aw88261->pll_retry_attempted = false;
 		aw88261->start_attempts = 0;
 		mutex_unlock(&aw88261->lock);
 		/*

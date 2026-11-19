@@ -622,6 +622,7 @@ struct aw88261 {
 	struct mutex lock;
 	struct delayed_work start_work;
 	bool playback_active;
+	bool pll_retry_attempted;
 	unsigned int start_attempts;
 	struct gpio_desc *reset_gpio;
 	struct regmap *regmap;
