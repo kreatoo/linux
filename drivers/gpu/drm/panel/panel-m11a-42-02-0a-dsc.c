@@ -492,9 +492,6 @@ static int m11a_42_02_0a_dsc_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.dsc_version_major = 1;
 	ctx->dsc.dsc_version_minor = 2;
 
-	/* Vendor DT: qcom,mdss-dsc-slice-per-pkt = <2> (one packet per line). */
-	dsi->dsc_slice_per_pkt = 2;
-
 	ctx->dsc.slice_height = 32;
 	ctx->dsc.slice_width = 720;
 	/*
