@@ -333,8 +333,8 @@ static const struct drm_display_mode m11a_42_02_0a_dsc_mode = {
 	.vsync_start = 3200 + 16,
 	.vsync_end = 3200 + 16 + 14,
 	.vtotal = 3200 + 16 + 14 + 6,
-	.width_mm = 695,
-	.height_mm = 1545,
+	.width_mm = 70,
+	.height_mm = 154,
 	.type = DRM_MODE_TYPE_DRIVER,
 };
 
