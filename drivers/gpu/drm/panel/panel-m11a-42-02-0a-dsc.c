@@ -125,7 +125,7 @@ static int m11a_42_02_0a_dsc_on(struct m11a_42_02_0a_dsc *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x9c, 0x01);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_WRITE_MEMORY_START,
 				     0x00);
-	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x2f, 0x02);
+	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x2f, 0x00);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x5f, 0x01);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_SET_GAMMA_CURVE, 0x00);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x8b, 0x00);
@@ -134,7 +134,7 @@ static int m11a_42_02_0a_dsc_on(struct m11a_42_02_0a_dsc *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x6f, 0x03);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xc0, 0x10);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x6f, 0x31);
-	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xdf, 0x21);
+	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xdf, 0x20);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xf0,
 				     0x55, 0xaa, 0x52, 0x08, 0x02);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xcc, 0x30);
@@ -318,13 +318,17 @@ static int m11a_42_02_0a_dsc_unprepare(struct drm_panel *panel)
 }
 
 /*
- * Command mode uses horizontal blanking as the DSI transfer-time budget. The
- * vendor programs a 7.3 ms transfer window at 1.2 Gb/s per lane.
+ * Command mode uses horizontal blanking as the DSI transfer-time budget.
+ * Vendor timing@2 is 120 Hz with the same 1.2 Gb/s PHY as 60 Hz. Scaling the
+ * old 60 Hz htotal by two would double the PHY clock, so use the reduced
+ * command transfer window that yields 200 MHz compressed pclk / 150 MHz byte
+ * clock / 1.2 Gb/s per lane for 120 Hz.
  */
-#define M11A_CMD_TRANSFER_HTOTAL 1990
+#define M11A_CMD_TRANSFER_HTOTAL 1571
+#define M11A_CMD_REFRESH_HZ 120
 
 static const struct drm_display_mode m11a_42_02_0a_dsc_mode = {
-	.clock = M11A_CMD_TRANSFER_HTOTAL * (3200 + 16 + 14 + 6) * 60 / 1000,
+	.clock = M11A_CMD_TRANSFER_HTOTAL * (3200 + 16 + 14 + 6) * M11A_CMD_REFRESH_HZ / 1000,
 	.hdisplay = 1440,
 	.hsync_start = 1440 + 8,
 	.hsync_end = 1440 + 8 + 12,
